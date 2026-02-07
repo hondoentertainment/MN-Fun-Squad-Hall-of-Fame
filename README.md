@@ -1,6 +1,8 @@
-# MN Fun Squad — 64-Team Tournament Bracket
+# MN Fun Squad — Hall of Fame Bracket
 
-A complete system for running a 64-team single-elimination bracket: an interactive browser-based picker and a Python-powered PDF generator.
+A complete system for running a 64-athlete single-elimination tournament bracket: an interactive browser-based picker with shareable links and a Python-powered PDF generator.
+
+**Live site:** https://mn-fun-squad-hall-of-fame.vercel.app
 
 ---
 
@@ -10,17 +12,39 @@ A complete system for running a 64-team single-elimination bracket: an interacti
 
 Just open `index.html` in any modern browser — no build step, no server needed.
 
-- Teams are loaded from `teams.json` (edit the file or use the **Edit Teams** button)
-- Click **Shuffle & Reset** to re-randomize seeds
-- Click a team name to pick a winner — winners advance automatically
-- Click a winner again to undo (downstream picks are cleared too)
+- 64 legendary athletes are pre-loaded across baseball, basketball, football, hockey, soccer, and more
+- Use the **Input Athletes** tab to add, remove, or clear athletes
+- Click **Generate Bracket** to create a randomized tournament bracket
+- Click **Resume Bracket** to continue where you left off (auto-saved)
 
-### 2. Export Your Picks
+### 2. Pick Winners
+
+- Switch to the **Bracket** tab
+- Click an athlete's name to pick them as the winner
+- Winners auto-advance to the next round
+- Click a winner again to undo (downstream picks clear automatically)
+- **Reset Picks** clears all selections but keeps the same matchup seeding
+- **Shuffle & Reset** re-randomizes everything
+
+### 3. Share & Export
 
 | Button | What it does |
 |---|---|
+| **Share Bracket** | Compresses your full bracket into a URL and copies it to your clipboard |
 | **Export Picks (JSON)** | Downloads `bracket_picks.json` with every matchup and your selections |
-| **Export PDF** | Sends picks to the Python PDF server; falls back to browser print dialog if the server isn't running |
+| **Export PDF** | Sends picks to the Python PDF server; falls back to browser print dialog |
+
+---
+
+## Features
+
+- **Tabbed interface** — Input Athletes roster management + interactive Bracket view
+- **Auto-sizing brackets** — 2 to 64 athletes; auto-pads with BYEs and advances them
+- **Bracket persistence** — All picks saved to localStorage; survives page refreshes
+- **Shareable URLs** — Deflate-compressed bracket state encoded in the URL
+- **Dark theme** — Modern dark UI with purple accent and green winner highlights
+- **Responsive** — Works on desktop and mobile
+- **Zero dependencies** — Single HTML file, no build tools, no frameworks
 
 ---
 
@@ -56,21 +80,18 @@ This starts a Flask server on `http://localhost:5000`. The HTML picker's **Expor
 
 ---
 
-## Team Input Format
+## Default Roster — 64 Legendary Athletes
 
-Edit `teams.json` — a simple JSON array of strings:
+| Category | Count | Examples |
+|---|---|---|
+| Baseball | 22 | Babe Ruth, Jackie Robinson, Kirby Puckett, Shohei Ohtani |
+| Basketball | 12 | Michael Jordan, LeBron James, Stephen Curry |
+| Football | 8 | Tom Brady, Jerry Rice, Walter Payton |
+| Hockey | 4 | Wayne Gretzky, Mario Lemieux, Bobby Orr |
+| Soccer | 6 | Pelé, Lionel Messi, Cristiano Ronaldo |
+| Other Sports | 12 | Tiger Woods, Serena Williams, Muhammad Ali, Simone Biles |
 
-```json
-[
-  "Team Alpha",
-  "Team Bravo",
-  "Team Charlie"
-]
-```
-
-- Maximum 64 teams; extras are trimmed
-- Fewer than 64? The system fills remaining slots with BYE entries
-- You can also paste teams directly into the **Edit Teams** modal in the browser
+Edit `teams.json` or use the in-browser **Input Athletes** tab to customize.
 
 ---
 
@@ -78,33 +99,22 @@ Edit `teams.json` — a simple JSON array of strings:
 
 ```
 MN Fun Squad Hall of Fame/
-├── index.html          # Interactive bracket picker (HTML + JS)
-├── generate_pdf.py     # PDF generator + optional Flask server
-├── teams.json          # Default team list (64 entries)
-├── requirements.txt    # Python dependencies
+├── index.html          # Complete frontend (HTML + CSS + JS, single file)
+├── generate_pdf.py     # Python PDF generator + optional Flask server
+├── teams.json          # Default 64-athlete roster
+├── requirements.txt    # Python dependencies (reportlab, flask, flask-cors)
+├── vercel.json         # Vercel static site deployment config
+├── PRD.md              # Product Requirements Document
 └── README.md           # This file
 ```
 
 ---
 
-## Architecture
+## Deployment
 
-```
-┌──────────────────────┐       POST /generate-pdf
-│   Browser Picker     │  ──────────────────────────►  ┌──────────────────┐
-│   (index.html)       │                                │  Flask Server    │
-│                      │  ◄──────────────────────────  │  (generate_pdf)  │
-│   Export JSON ───► bracket_picks.json                 │                  │
-│   Export PDF  ───► calls server or print dialog       │  ───► bracket.pdf│
-└──────────────────────┘                                └──────────────────┘
-```
+| Environment | URL |
+|---|---|
+| **Production** | https://mn-fun-squad-hall-of-fame.vercel.app |
+| **Source** | https://github.com/hondoentertainment/MN-Fun-Squad-Hall-of-Fame |
 
----
-
-## Next Enhancements
-
-- [ ] Save/load bracket state to `localStorage`
-- [ ] Multi-user bracket comparison & scoring
-- [ ] Seeded regions (like actual March Madness quadrants)
-- [ ] Dark/light theme toggle
-- [ ] Database-backed pick storage
+Vercel auto-deploys on every push to `master`.
