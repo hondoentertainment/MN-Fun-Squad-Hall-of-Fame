@@ -196,6 +196,12 @@
       font-size: .9rem;
       font-weight: 500;
     }
+    .athlete-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
     .athlete-remove {
       width: 28px; height: 28px;
       display: flex; align-items: center; justify-content: center;
@@ -277,6 +283,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      justify-content: space-between;
       height: var(--slot-h);
       padding: 0 10px;
       border: 1px solid var(--border);
@@ -288,6 +295,17 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .team-slot .slot-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .team-slot .sport-badge {
+      margin-left: auto;
+      font-size: .58rem;
+      padding: 1px 6px;
     }
     .team-slot:first-child { border-radius: 6px 6px 0 0; }
     .team-slot:last-child  { border-radius: 0 0 6px 6px; border-top: none; }
@@ -322,6 +340,29 @@
     }
 
     .round .matchup { margin-bottom: var(--slot-gap); }
+
+    /* ── Sport Badges ─────────────────────────────────────── */
+    .sport-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .sport-baseball { background: rgba(231, 76, 60, .18); color: #e74c3c; border-color: rgba(231, 76, 60, .5); }
+    .sport-basketball { background: rgba(230, 126, 34, .18); color: #e67e22; border-color: rgba(230, 126, 34, .5); }
+    .sport-football { background: rgba(46, 204, 113, .18); color: #2ecc71; border-color: rgba(46, 204, 113, .5); }
+    .sport-hockey { background: rgba(52, 152, 219, .18); color: #3498db; border-color: rgba(52, 152, 219, .5); }
+    .sport-soccer { background: rgba(155, 89, 182, .18); color: #9b59b6; border-color: rgba(155, 89, 182, .5); }
+    .sport-other { background: rgba(241, 196, 15, .18); color: #f1c40f; border-color: rgba(241, 196, 15, .5); }
 
     /* ── Champion Banner ───────────────────────────────────── */
     #champion-banner {
@@ -445,6 +486,49 @@ function switchToTab(name) {
 /* ── Athletes State ────────────────────────────────────── */
 let athletes = [];
 
+/* ── Sport Mapping ─────────────────────────────────────── */
+const SPORT_MAP = {
+  baseball: [
+    'Babe Ruth', 'Jackie Robinson', 'Willie Mays', 'Hank Aaron', 'Barry Bonds',
+    'Ken Griffey Jr.', 'Derek Jeter', 'Mike Trout', 'Shohei Ohtani',
+    'Kirby Puckett', 'Wade Boggs', 'David Wells', 'Nolan Ryan', 'Cal Ripken Jr.',
+    'Mariano Rivera', 'Pedro Martinez', 'Roger Clemens', 'Mike Piazza',
+    'Albert Pujols', 'Ichiro Suzuki', 'Aaron Judge', 'Keith Hernandez'
+  ],
+  basketball: [
+    'Michael Jordan', 'LeBron James', 'Kobe Bryant', 'Magic Johnson', 'Larry Bird',
+    "Shaquille O'Neal", 'Tim Duncan', 'Stephen Curry', 'Kevin Durant',
+    'Giannis Antetokounmpo', 'Mugsy Bogues', 'Bo Jackson'
+  ],
+  football: [
+    'Tom Brady', 'Jerry Rice', 'Peyton Manning', 'Joe Montana', 'Walter Payton',
+    'Barry Sanders', 'Lawrence Taylor', 'Deion Sanders'
+  ],
+  hockey: ['Wayne Gretzky', 'Mario Lemieux', 'Bobby Orr', 'Connor McDavid'],
+  soccer: ['Pelé', 'Diego Maradona', 'Lionel Messi', 'Cristiano Ronaldo', 'Zinedine Zidane', 'Ronaldinho'],
+  other: [
+    'Tiger Woods', 'Jack Nicklaus', 'Serena Williams', 'Roger Federer',
+    'Rafael Nadal', 'Novak Djokovic', 'Usain Bolt', 'Michael Phelps',
+    'Muhammad Ali', 'Mike Tyson', 'Floyd Mayweather Jr.', 'Simone Biles'
+  ]
+};
+
+const SPORT_LABELS = {
+  baseball: 'Baseball',
+  basketball: 'Basketball',
+  football: 'Football',
+  hockey: 'Hockey',
+  soccer: 'Soccer',
+  other: 'Other'
+};
+
+function getSport(name) {
+  for (const [sport, list] of Object.entries(SPORT_MAP)) {
+    if (list.includes(name)) return sport;
+  }
+  return 'other';
+}
+
 function renderAthletesList() {
   const list = document.getElementById('athletes-list');
   const countEl = document.getElementById('athlete-count');
@@ -472,7 +556,8 @@ function renderAthletesList() {
     li.className = 'athlete-item';
     li.innerHTML = `
       <div class="athlete-number">${i + 1}</div>
-      <div class="athlete-name">${escapeHtml(name)}</div>`;
+      <div class="athlete-name">${escapeHtml(name)}</div>
+      <div class="athlete-meta"></div>`;
     const removeBtn = document.createElement('button');
     removeBtn.className = 'athlete-remove';
     removeBtn.title = 'Remove';
@@ -482,7 +567,13 @@ function renderAthletesList() {
       saveAthletes();
       renderAthletesList();
     });
-    li.appendChild(removeBtn);
+    const meta = li.querySelector('.athlete-meta');
+    const sport = getSport(name);
+    const badge = document.createElement('span');
+    badge.className = `sport-badge sport-${sport}`;
+    badge.textContent = SPORT_LABELS[sport] || 'Other';
+    meta.appendChild(badge);
+    meta.appendChild(removeBtn);
     list.appendChild(li);
   });
 }
@@ -860,8 +951,17 @@ function makeSlot(name, matchup, pos, roundIdx, matchIdx) {
   }
 
   const span = document.createElement('span');
+  span.className = 'slot-name';
   span.textContent = name;
   div.appendChild(span);
+
+  if (!name.startsWith('BYE')) {
+    const sport = getSport(name);
+    const badge = document.createElement('span');
+    badge.className = `sport-badge sport-${sport}`;
+    badge.textContent = SPORT_LABELS[sport] || 'Other';
+    div.appendChild(badge);
+  }
 
   if (matchup.winner === name) div.classList.add('winner');
   else if (matchup.winner && matchup.winner !== name) div.classList.add('loser');
