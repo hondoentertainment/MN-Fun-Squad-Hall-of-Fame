@@ -365,6 +365,7 @@
 <header>
   <h1><span>MN Fun Squad</span> — Hall of Fame Bracket</h1>
   <div class="header-actions">
+    <button id="btn-share">Share Bracket</button>
     <button id="btn-export-json" class="primary">Export Picks (JSON)</button>
     <button id="btn-export-pdf" class="primary">Export PDF</button>
   </div>
@@ -392,6 +393,7 @@
 
   <div class="athletes-actions">
     <button class="danger" id="btn-clear-all">Clear All</button>
+    <button id="btn-resume-bracket" style="display:none;">Resume Bracket &rarr;</button>
     <button id="btn-generate-bracket" class="primary">Generate Bracket &rarr;</button>
     <span class="hint">Min 2 athletes needed to build a bracket</span>
   </div>
@@ -399,9 +401,11 @@
 
 <!-- ═══ TAB 2: Bracket ═══ -->
 <div id="panel-bracket" class="tab-panel">
-  <div style="padding: 12px 28px; display: flex; gap: 10px; align-items: center;">
+  <div style="padding: 12px 28px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
     <button id="btn-randomize">Shuffle &amp; Reset</button>
-    <span style="font-size: .78rem; color: var(--muted);">Click a team to pick the winner. Click a winner to undo.</span>
+    <button id="btn-reset-picks">Reset Picks</button>
+    <button id="btn-share-bracket" class="primary">Share Bracket</button>
+    <span style="font-size: .78rem; color: var(--muted); margin-left: auto;">Click a team to pick the winner. Click a winner to undo.</span>
   </div>
   <div id="bracket-container"></div>
   <div id="champion-banner">
@@ -445,9 +449,14 @@ function renderAthletesList() {
   const list = document.getElementById('athletes-list');
   const countEl = document.getElementById('athlete-count');
   const genBtn = document.getElementById('btn-generate-bracket');
+  const resumeBtn = document.getElementById('btn-resume-bracket');
   list.innerHTML = '';
   countEl.textContent = `${athletes.length} / 64`;
   genBtn.disabled = athletes.length < 2;
+
+  // Show resume button if a bracket is saved
+  const hasSaved = localStorage.getItem('mnfs_bracket') !== null;
+  resumeBtn.style.display = hasSaved ? '' : 'none';
 
   if (athletes.length === 0) {
     list.innerHTML = `
@@ -505,7 +514,6 @@ function saveAthletes() {
   localStorage.setItem('mnfs_roster_v', ROSTER_VERSION);
 }
 function loadAthletes() {
-  // If the roster version doesn't match, skip localStorage so teams.json is re-fetched
   if (localStorage.getItem('mnfs_roster_v') !== ROSTER_VERSION) return false;
   const saved = localStorage.getItem('mnfs_athletes');
   if (saved) {
@@ -513,6 +521,120 @@ function loadAthletes() {
     catch { /* fall through */ }
   }
   return false;
+}
+
+/* ── Persist bracket state to localStorage ─────────────── */
+function saveBracket() {
+  const state = { currentTeams, rounds, roundNames };
+  localStorage.setItem('mnfs_bracket', JSON.stringify(state));
+}
+function loadBracket() {
+  const saved = localStorage.getItem('mnfs_bracket');
+  if (!saved) return false;
+  try {
+    const state = JSON.parse(saved);
+    if (!state.rounds || !state.rounds.length) return false;
+    currentTeams = state.currentTeams || [];
+    rounds = state.rounds;
+    roundNames = state.roundNames || [];
+    return true;
+  } catch { return false; }
+}
+function clearSavedBracket() {
+  localStorage.removeItem('mnfs_bracket');
+}
+
+/* ════════════════════════════════════════════════════════════
+   SHARE BRACKET VIA URL
+   ════════════════════════════════════════════════════════════
+   Encodes the full bracket state into a compressed base64 URL
+   parameter so users can share their picks with a link.
+   ─────────────────────────────────────────────────────────── */
+
+function bracketToShareData() {
+  return { currentTeams, rounds, roundNames };
+}
+
+function compressJSON(obj) {
+  const json = JSON.stringify(obj);
+  // Use TextEncoder to get bytes, then deflate-compress, then base64url
+  const bytes = new TextEncoder().encode(json);
+  // Simple: use built-in CompressionStream if available, else fall back to raw base64
+  if (typeof CompressionStream !== 'undefined') {
+    const cs = new CompressionStream('deflate');
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    return new Response(cs.readable).arrayBuffer().then(buf => {
+      return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    });
+  }
+  // Fallback: raw base64url (larger but universally supported)
+  return Promise.resolve(
+    btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  );
+}
+
+function decompressJSON(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+  if (typeof DecompressionStream !== 'undefined') {
+    const ds = new DecompressionStream('deflate');
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    return new Response(ds.readable).text().then(JSON.parse);
+  }
+  // Fallback: raw base64
+  return Promise.resolve(JSON.parse(new TextDecoder().decode(bytes)));
+}
+
+async function shareBracket() {
+  if (!rounds.length) { toast('Generate a bracket first!'); return; }
+  try {
+    const data = bracketToShareData();
+    const compressed = await compressJSON(data);
+    const url = `${location.origin}${location.pathname}?b=${compressed}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      toast('Share link copied to clipboard!');
+    } else {
+      // Fallback: prompt
+      prompt('Copy this share link:', url);
+    }
+  } catch (e) {
+    console.error('Share error:', e);
+    toast('Could not generate share link');
+  }
+}
+
+async function loadFromURL() {
+  const params = new URLSearchParams(location.search);
+  const b = params.get('b');
+  if (!b) return false;
+  try {
+    const data = await decompressJSON(b);
+    if (!data.rounds || !data.rounds.length) return false;
+    currentTeams = data.currentTeams || [];
+    rounds = data.rounds;
+    roundNames = data.roundNames || [];
+    // Also populate athletes list from the shared teams (filter out BYEs)
+    athletes = currentTeams.filter(t => !t.startsWith('BYE'));
+    saveAthletes();
+    saveBracket();
+    // Clean the URL without reloading
+    history.replaceState(null, '', location.pathname);
+    return true;
+  } catch (e) {
+    console.error('Failed to load shared bracket:', e);
+    return false;
+  }
 }
 
 /* ── Add athlete UI wiring ─────────────────────────────── */
@@ -549,6 +671,17 @@ document.getElementById('btn-generate-bracket').addEventListener('click', () => 
   initBracket([...athletes]);
   switchToTab('bracket');
   toast(`Bracket generated with ${athletes.length} athletes!`);
+});
+
+document.getElementById('btn-resume-bracket').addEventListener('click', () => {
+  if (loadBracket()) {
+    renderBracket();
+    updateChampionBanner();
+    switchToTab('bracket');
+    toast('Bracket resumed!');
+  } else {
+    toast('No saved bracket found');
+  }
 });
 
 /* ════════════════════════════════════════════════════════════
@@ -596,24 +729,20 @@ function nextPow2(n) {
 function initBracket(teams) {
   const size = nextPow2(teams.length);
   currentTeams = teams.slice(0, size);
-  // Pad with BYE entries if needed
   while (currentTeams.length < size) currentTeams.push(`BYE ${currentTeams.length + 1}`);
 
   const shuffled = shuffle(currentTeams);
 
-  // Figure out round names
   roundNames = ROUND_NAMES_MAP[size] || [];
   const numRounds = Math.log2(size);
 
   rounds = [];
-  // Round 0
   const r0 = [];
   for (let i = 0; i < size; i += 2) {
     r0.push({ top: shuffled[i], bottom: shuffled[i + 1], winner: null, topSeed: i + 1, bottomSeed: i + 2 });
   }
   rounds.push(r0);
 
-  // Subsequent rounds
   let prevCount = size / 2;
   for (let r = 1; r < numRounds; r++) {
     const rnd = [];
@@ -624,16 +753,14 @@ function initBracket(teams) {
     prevCount /= 2;
   }
 
-  // Auto-advance BYE matchups
   autoAdvanceByes();
-
+  saveBracket();
   renderBracket();
   document.getElementById('champion-banner').classList.remove('visible');
   document.getElementById('champion-name').textContent = '';
 }
 
 function autoAdvanceByes() {
-  // In round 0, if one side is a BYE, auto-pick the other
   rounds[0].forEach((m, mi) => {
     const topIsBye = m.top && m.top.startsWith('BYE');
     const botIsBye = m.bottom && m.bottom.startsWith('BYE');
@@ -642,10 +769,40 @@ function autoAdvanceByes() {
     } else if (!topIsBye && botIsBye) {
       pickWinnerSilent(0, mi, 'top');
     } else if (topIsBye && botIsBye) {
-      // Both BYE — pick top by default
       pickWinnerSilent(0, mi, 'top');
     }
   });
+}
+
+/* ── Reset picks (keep seeding) ────────────────────────── */
+function resetPicks() {
+  if (!rounds.length) return;
+  // Clear all winners and downstream slots
+  for (let r = rounds.length - 1; r >= 0; r--) {
+    rounds[r].forEach(m => {
+      m.winner = null;
+      if (r > 0) { m.top = null; m.bottom = null; }
+    });
+  }
+  // Re-advance BYEs
+  autoAdvanceByes();
+  saveBracket();
+  renderBracket();
+  document.getElementById('champion-banner').classList.remove('visible');
+  document.getElementById('champion-name').textContent = '';
+}
+
+/* ── Update champion banner from current state ─────────── */
+function updateChampionBanner() {
+  if (!rounds.length) return;
+  const last = rounds[rounds.length - 1][0];
+  if (last && last.winner) {
+    document.getElementById('champion-name').textContent = last.winner;
+    document.getElementById('champion-banner').classList.add('visible');
+  } else {
+    document.getElementById('champion-banner').classList.remove('visible');
+    document.getElementById('champion-name').textContent = '';
+  }
 }
 
 /* ── Render Bracket ────────────────────────────────────── */
@@ -721,7 +878,9 @@ function pickWinner(roundIdx, matchIdx, pos) {
 
   if (matchup.winner === chosen) {
     clearFromRound(roundIdx, matchIdx);
+    saveBracket();
     renderBracket();
+    updateChampionBanner();
     return;
   }
 
@@ -740,10 +899,11 @@ function pickWinner(roundIdx, matchIdx, pos) {
     document.getElementById('champion-banner').classList.add('visible');
   }
 
+  saveBracket();
   renderBracket();
 }
 
-/* Silent version for auto-advancing BYEs (no re-render per call) */
+/* Silent version for auto-advancing BYEs */
 function pickWinnerSilent(roundIdx, matchIdx, pos) {
   const matchup = rounds[roundIdx][matchIdx];
   const chosen = pos === 'top' ? matchup.top : matchup.bottom;
@@ -815,34 +975,58 @@ function exportPDF() {
   });
 }
 
-/* ── Header button wiring ──────────────────────────────── */
+/* ── Header & bracket toolbar button wiring ────────────── */
 document.getElementById('btn-randomize').addEventListener('click', () => {
   if (currentTeams.length < 2) { toast('Generate a bracket first!'); return; }
-  initBracket([...currentTeams]);
+  initBracket([...athletes.length ? athletes : currentTeams]);
   toast('Bracket shuffled!');
 });
+
+document.getElementById('btn-reset-picks').addEventListener('click', () => {
+  if (!rounds.length) { toast('Generate a bracket first!'); return; }
+  if (confirm('Clear all picks but keep the current matchups?')) {
+    resetPicks();
+    toast('All picks cleared!');
+  }
+});
+
+document.getElementById('btn-share').addEventListener('click', shareBracket);
+document.getElementById('btn-share-bracket').addEventListener('click', shareBracket);
 document.getElementById('btn-export-json').addEventListener('click', exportJSON);
 document.getElementById('btn-export-pdf').addEventListener('click', exportPDF);
 
 /* ── Init ──────────────────────────────────────────────── */
-(function boot() {
-  // Try localStorage first
-  if (loadAthletes() && athletes.length > 0) {
+(async function boot() {
+  // 1. Check for a shared bracket in the URL
+  const loadedFromURL = await loadFromURL();
+  if (loadedFromURL) {
     renderAthletesList();
+    renderBracket();
+    updateChampionBanner();
+    switchToTab('bracket');
+    toast('Shared bracket loaded!');
     return;
   }
-  // Otherwise try teams.json
-  fetch('teams.json')
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(teams => {
-      athletes = teams.filter(t => t && typeof t === 'string');
-      saveAthletes();
-      renderAthletesList();
-    })
-    .catch(() => {
-      athletes = [];
-      renderAthletesList();
-    });
+
+  // 2. Load athletes roster
+  if (!loadAthletes() || athletes.length === 0) {
+    // Fetch from teams.json
+    try {
+      const res = await fetch('teams.json');
+      if (res.ok) {
+        const teams = await res.json();
+        athletes = teams.filter(t => t && typeof t === 'string');
+        saveAthletes();
+      }
+    } catch { /* ignore */ }
+  }
+  renderAthletesList();
+
+  // 3. If there's a saved bracket, restore it silently (user can resume via button)
+  if (loadBracket()) {
+    renderBracket();
+    updateChampionBanner();
+  }
 })();
 
 </script>
