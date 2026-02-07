@@ -499,10 +499,14 @@ function escapeHtml(str) {
 }
 
 /* ── Persist athletes to localStorage ──────────────────── */
+const ROSTER_VERSION = '2';   // bump when teams.json changes to force reload
 function saveAthletes() {
   localStorage.setItem('mnfs_athletes', JSON.stringify(athletes));
+  localStorage.setItem('mnfs_roster_v', ROSTER_VERSION);
 }
 function loadAthletes() {
+  // If the roster version doesn't match, skip localStorage so teams.json is re-fetched
+  if (localStorage.getItem('mnfs_roster_v') !== ROSTER_VERSION) return false;
   const saved = localStorage.getItem('mnfs_athletes');
   if (saved) {
     try { athletes = JSON.parse(saved); return true; }
