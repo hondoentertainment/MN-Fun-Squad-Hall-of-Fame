@@ -1,0 +1,9 @@
+{
+  "name": "mn-fun-squad-hall-of-fame",
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/$1" }
+  ]
+}
