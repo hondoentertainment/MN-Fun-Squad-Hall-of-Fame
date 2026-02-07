@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MN Fun Squad — 64-Team Tournament Bracket</title>
+  <title>MN Fun Squad — Hall of Fame Bracket</title>
   <style>
     /* ── Reset & Base ──────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,10 +11,12 @@
     :root {
       --bg: #0f1117;
       --surface: #1a1d27;
+      --surface2: #22253a;
       --border: #2e3345;
       --accent: #6c63ff;
       --accent-glow: rgba(108, 99, 255, .35);
       --win: #00c896;
+      --danger: #e5484d;
       --text: #e2e4ed;
       --muted: #7a7f96;
       --round-gap: 28px;
@@ -38,7 +40,7 @@
       position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 28px;
-      background: linear-gradient(180deg, var(--surface) 70%, transparent);
+      background: linear-gradient(180deg, var(--surface) 80%, transparent);
       backdrop-filter: blur(12px);
     }
     header h1 { font-size: 1.25rem; letter-spacing: .02em; }
@@ -68,6 +70,169 @@
       font-weight: 600;
     }
     button.primary:hover { box-shadow: 0 0 14px var(--accent-glow); }
+    button.danger {
+      background: transparent;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    button.danger:hover {
+      background: rgba(229, 72, 77, .1);
+      box-shadow: 0 0 8px rgba(229, 72, 77, .3);
+    }
+    button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    /* ── Tabs ──────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      background: var(--surface);
+    }
+    .tab-btn {
+      padding: 12px 24px;
+      font-size: .85rem;
+      font-weight: 600;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: var(--text); box-shadow: none; }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Input Athletes Panel ──────────────────────────────── */
+    #panel-athletes {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 28px 48px;
+    }
+    .athletes-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .athletes-header h2 { font-size: 1.15rem; }
+    .athletes-count {
+      font-size: .8rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .add-athlete-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .add-athlete-row input {
+      flex: 1;
+      padding: 10px 14px;
+      font-family: var(--font);
+      font-size: .88rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .add-athlete-row input::placeholder { color: var(--muted); }
+    .add-athlete-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .athletes-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+    .athlete-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color .12s, background .12s;
+    }
+    .athlete-item:hover {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+    .athlete-number {
+      min-width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 700;
+      border-radius: 50%;
+    }
+    .athlete-name {
+      flex: 1;
+      font-size: .9rem;
+      font-weight: 500;
+    }
+    .athlete-remove {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0;
+      transition: color .12s, background .12s, border-color .12s;
+    }
+    .athlete-remove:hover {
+      color: var(--danger);
+      background: rgba(229, 72, 77, .1);
+      border-color: var(--danger);
+      box-shadow: none;
+    }
+
+    .athletes-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .athletes-actions .hint {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 2.4rem; margin-bottom: 8px; }
+    .empty-state p { font-size: .88rem; }
 
     /* ── Bracket Container ─────────────────────────────────── */
     #bracket-container {
@@ -140,9 +305,7 @@
       color: var(--win);
       font-weight: 600;
     }
-    .team-slot.loser {
-      opacity: .38;
-    }
+    .team-slot.loser { opacity: .38; }
     .team-slot.empty {
       cursor: default;
       color: var(--muted);
@@ -158,7 +321,6 @@
       font-weight: 600;
     }
 
-    /* spacing between matchups – increases each round */
     .round .matchup { margin-bottom: var(--slot-gap); }
 
     /* ── Champion Banner ───────────────────────────────────── */
@@ -172,8 +334,8 @@
     }
     #champion-banner.visible { display: flex; }
     #champion-banner .trophy { font-size: 2.6rem; margin-bottom: 6px; }
-    #champion-banner .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
-    #champion-banner .name  { font-size: 1.5rem; font-weight: 700; color: var(--win); margin-top: 4px; }
+    #champion-banner .label  { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+    #champion-banner .name   { font-size: 1.5rem; font-weight: 700; color: var(--win); margin-top: 4px; }
 
     /* ── Toast ──────────────────────────────────────────────── */
     #toast {
@@ -185,40 +347,15 @@
     }
     #toast.show { opacity: 1; }
 
-    /* ── Modal ──────────────────────────────────────────────── */
-    .modal-bg {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.55);
-      z-index: 300;
-      justify-content: center; align-items: center;
-    }
-    .modal-bg.open { display: flex; }
-
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px 32px;
-      max-width: 520px; width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    .modal h2 { font-size: 1.1rem; margin-bottom: 14px; }
-    .modal textarea {
-      width: 100%; height: 220px;
-      background: var(--bg); color: var(--text); border: 1px solid var(--border);
-      border-radius: 6px; padding: 10px; font-family: 'Cascadia Code', 'Fira Code', monospace;
-      font-size: .8rem; resize: vertical;
-    }
-    .modal .actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
-
     /* ── Responsive ────────────────────────────────────────── */
     @media (max-width: 900px) {
       :root { --slot-h: 30px; }
       .round { min-width: 140px; }
       header { padding: 10px 16px; }
+      .tab-bar { padding: 0 16px; }
+      #panel-athletes { padding: 20px 16px 40px; }
       #bracket-container { padding: 16px; gap: 18px; }
+      .add-athlete-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -228,55 +365,205 @@
 <header>
   <h1><span>MN Fun Squad</span> — Hall of Fame Bracket</h1>
   <div class="header-actions">
-    <button id="btn-edit-teams">Edit Teams</button>
-    <button id="btn-randomize">Shuffle &amp; Reset</button>
     <button id="btn-export-json" class="primary">Export Picks (JSON)</button>
     <button id="btn-export-pdf" class="primary">Export PDF</button>
   </div>
 </header>
 
-<!-- Bracket -->
-<div id="bracket-container"></div>
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="athletes">Input Athletes</button>
+  <button class="tab-btn" data-tab="bracket">Bracket</button>
+</div>
 
-<!-- Champion -->
-<div id="champion-banner">
-  <div class="trophy">🏆</div>
-  <div class="label">Champion</div>
-  <div class="name" id="champion-name"></div>
+<!-- ═══ TAB 1: Input Athletes ═══ -->
+<div id="panel-athletes" class="tab-panel active">
+  <div class="athletes-header">
+    <h2>Athletes Roster</h2>
+    <div class="athletes-count" id="athlete-count">0 / 64</div>
+  </div>
+
+  <div class="add-athlete-row">
+    <input type="text" id="athlete-input" placeholder="Enter athlete name..." maxlength="60" autocomplete="off" />
+    <button class="primary" id="btn-add-athlete">Add</button>
+  </div>
+
+  <ul class="athletes-list" id="athletes-list"></ul>
+
+  <div class="athletes-actions">
+    <button class="danger" id="btn-clear-all">Clear All</button>
+    <button id="btn-generate-bracket" class="primary">Generate Bracket &rarr;</button>
+    <span class="hint">Min 2 athletes needed to build a bracket</span>
+  </div>
+</div>
+
+<!-- ═══ TAB 2: Bracket ═══ -->
+<div id="panel-bracket" class="tab-panel">
+  <div style="padding: 12px 28px; display: flex; gap: 10px; align-items: center;">
+    <button id="btn-randomize">Shuffle &amp; Reset</button>
+    <span style="font-size: .78rem; color: var(--muted);">Click a team to pick the winner. Click a winner to undo.</span>
+  </div>
+  <div id="bracket-container"></div>
+  <div id="champion-banner">
+    <div class="trophy">&#127942;</div>
+    <div class="label">Champion</div>
+    <div class="name" id="champion-name"></div>
+  </div>
 </div>
 
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Edit Teams Modal -->
-<div class="modal-bg" id="modal-teams">
-  <div class="modal">
-    <h2>Edit Teams (one per line, max 64)</h2>
-    <textarea id="teams-textarea"></textarea>
-    <div class="actions">
-      <button id="btn-cancel-teams">Cancel</button>
-      <button id="btn-save-teams" class="primary">Save &amp; Rebuild</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ════════════════════════════════════════════════════════════
-   64-TEAM BRACKET — INTERACTIVE PICKER
+   MN FUN SQUAD — HALL OF FAME BRACKET
    ════════════════════════════════════════════════════════════ */
 
-const ROUND_NAMES = [
-  'Round of 64', 'Round of 32', 'Sweet 16',
-  'Elite 8', 'Final Four', 'Championship', 'Champion'
-];
+/* ── Tabs ──────────────────────────────────────────────── */
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+function switchToTab(name) {
+  tabBtns.forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+}
+
+/* ── Athletes State ────────────────────────────────────── */
+let athletes = [];
+
+function renderAthletesList() {
+  const list = document.getElementById('athletes-list');
+  const countEl = document.getElementById('athlete-count');
+  const genBtn = document.getElementById('btn-generate-bracket');
+  list.innerHTML = '';
+  countEl.textContent = `${athletes.length} / 64`;
+  genBtn.disabled = athletes.length < 2;
+
+  if (athletes.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">&#9917;</div>
+        <p>No athletes added yet. Type a name above and click <strong>Add</strong>.</p>
+      </div>`;
+    return;
+  }
+
+  athletes.forEach((name, i) => {
+    const li = document.createElement('li');
+    li.className = 'athlete-item';
+    li.innerHTML = `
+      <div class="athlete-number">${i + 1}</div>
+      <div class="athlete-name">${escapeHtml(name)}</div>`;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'athlete-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.addEventListener('click', () => {
+      athletes.splice(i, 1);
+      saveAthletes();
+      renderAthletesList();
+    });
+    li.appendChild(removeBtn);
+    list.appendChild(li);
+  });
+}
+
+function addAthlete(name) {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  if (athletes.length >= 64) { toast('Maximum 64 athletes!'); return false; }
+  if (athletes.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
+    toast('Athlete already in the list!');
+    return false;
+  }
+  athletes.push(trimmed);
+  saveAthletes();
+  renderAthletesList();
+  return true;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ── Persist athletes to localStorage ──────────────────── */
+function saveAthletes() {
+  localStorage.setItem('mnfs_athletes', JSON.stringify(athletes));
+}
+function loadAthletes() {
+  const saved = localStorage.getItem('mnfs_athletes');
+  if (saved) {
+    try { athletes = JSON.parse(saved); return true; }
+    catch { /* fall through */ }
+  }
+  return false;
+}
+
+/* ── Add athlete UI wiring ─────────────────────────────── */
+const athleteInput = document.getElementById('athlete-input');
+document.getElementById('btn-add-athlete').addEventListener('click', () => {
+  if (addAthlete(athleteInput.value)) {
+    athleteInput.value = '';
+    athleteInput.focus();
+    toast('Athlete added!');
+  }
+});
+athleteInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (addAthlete(athleteInput.value)) {
+      athleteInput.value = '';
+      toast('Athlete added!');
+    }
+  }
+});
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  if (athletes.length === 0) return;
+  if (confirm('Remove all athletes from the list?')) {
+    athletes = [];
+    saveAthletes();
+    renderAthletesList();
+    toast('All athletes cleared');
+  }
+});
+
+document.getElementById('btn-generate-bracket').addEventListener('click', () => {
+  if (athletes.length < 2) { toast('Need at least 2 athletes!'); return; }
+  initBracket([...athletes]);
+  switchToTab('bracket');
+  toast(`Bracket generated with ${athletes.length} athletes!`);
+});
+
+/* ════════════════════════════════════════════════════════════
+   BRACKET ENGINE
+   ════════════════════════════════════════════════════════════ */
+
+const ROUND_NAMES_MAP = {
+  64: ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite 8', 'Final Four', 'Championship'],
+  32: ['Round of 32', 'Sweet 16', 'Elite 8', 'Final Four', 'Championship'],
+  16: ['Sweet 16', 'Elite 8', 'Final Four', 'Championship'],
+  8:  ['Elite 8', 'Final Four', 'Championship'],
+  4:  ['Final Four', 'Championship'],
+  2:  ['Championship'],
+};
 
 let currentTeams = [];
-let rounds = [];     // rounds[r] = [ { top, bottom, winner } ... ]
+let rounds = [];
+let roundNames = [];
 
-/* ── Default teams ─────────────────────────────────────── */
-const DEFAULT_TEAMS = Array.from({ length: 64 }, (_, i) => `Team ${i + 1}`);
-
-/* ── Utils ─────────────────────────────────────────────── */
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -290,26 +577,41 @@ function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-/* ── Build bracket data ────────────────────────────────── */
+/* ── Find next power of 2 ─────────────────────────────── */
+function nextPow2(n) {
+  let p = 2;
+  while (p < n) p *= 2;
+  return Math.min(p, 64);
+}
+
+/* ── Build bracket ─────────────────────────────────────── */
 function initBracket(teams) {
-  currentTeams = teams.slice(0, 64);
-  while (currentTeams.length < 64) currentTeams.push(`BYE ${currentTeams.length + 1}`);
+  const size = nextPow2(teams.length);
+  currentTeams = teams.slice(0, size);
+  // Pad with BYE entries if needed
+  while (currentTeams.length < size) currentTeams.push(`BYE ${currentTeams.length + 1}`);
+
   const shuffled = shuffle(currentTeams);
 
+  // Figure out round names
+  roundNames = ROUND_NAMES_MAP[size] || [];
+  const numRounds = Math.log2(size);
+
   rounds = [];
-  // Round 0 — 32 matchups
+  // Round 0
   const r0 = [];
-  for (let i = 0; i < 64; i += 2) {
+  for (let i = 0; i < size; i += 2) {
     r0.push({ top: shuffled[i], bottom: shuffled[i + 1], winner: null, topSeed: i + 1, bottomSeed: i + 2 });
   }
   rounds.push(r0);
 
-  // Rounds 1–5
-  let prevCount = 32;
-  for (let r = 1; r <= 5; r++) {
+  // Subsequent rounds
+  let prevCount = size / 2;
+  for (let r = 1; r < numRounds; r++) {
     const rnd = [];
     for (let m = 0; m < prevCount / 2; m++) {
       rnd.push({ top: null, bottom: null, winner: null });
@@ -317,12 +619,32 @@ function initBracket(teams) {
     rounds.push(rnd);
     prevCount /= 2;
   }
+
+  // Auto-advance BYE matchups
+  autoAdvanceByes();
+
   renderBracket();
   document.getElementById('champion-banner').classList.remove('visible');
   document.getElementById('champion-name').textContent = '';
 }
 
-/* ── Render ─────────────────────────────────────────────── */
+function autoAdvanceByes() {
+  // In round 0, if one side is a BYE, auto-pick the other
+  rounds[0].forEach((m, mi) => {
+    const topIsBye = m.top && m.top.startsWith('BYE');
+    const botIsBye = m.bottom && m.bottom.startsWith('BYE');
+    if (topIsBye && !botIsBye) {
+      pickWinnerSilent(0, mi, 'bottom');
+    } else if (!topIsBye && botIsBye) {
+      pickWinnerSilent(0, mi, 'top');
+    } else if (topIsBye && botIsBye) {
+      // Both BYE — pick top by default
+      pickWinnerSilent(0, mi, 'top');
+    }
+  });
+}
+
+/* ── Render Bracket ────────────────────────────────────── */
 function renderBracket() {
   const container = document.getElementById('bracket-container');
   container.innerHTML = '';
@@ -333,27 +655,24 @@ function renderBracket() {
 
     const label = document.createElement('div');
     label.className = 'round-label';
-    label.textContent = ROUND_NAMES[r] || `Round ${r + 1}`;
+    label.textContent = roundNames[r] || `Round ${r + 1}`;
     roundDiv.appendChild(label);
 
     const matchupsDiv = document.createElement('div');
     matchupsDiv.className = 'matchups';
 
-    // Compute dynamic spacing so matchups align vertically
     const scale = Math.pow(2, r);
-    const baseH = (34 + 4);  // slot-h + gap
+    const baseH = (34 + 4);
     const matchupH = baseH * 2;
     const spacerH = matchupH * scale - matchupH;
 
     rounds[r].forEach((m, mi) => {
       const mDiv = document.createElement('div');
       mDiv.className = 'matchup';
-      mDiv.style.marginTop = mi === 0 ? `${(spacerH) / 2}px` : `${spacerH}px`;
+      mDiv.style.marginTop = mi === 0 ? `${spacerH / 2}px` : `${spacerH}px`;
 
-      const topSlot = makeSlot(m.top, m, 'top', r, mi);
-      const botSlot = makeSlot(m.bottom, m, 'bottom', r, mi);
-      mDiv.appendChild(topSlot);
-      mDiv.appendChild(botSlot);
+      mDiv.appendChild(makeSlot(m.top, m, 'top', r, mi));
+      mDiv.appendChild(makeSlot(m.bottom, m, 'bottom', r, mi));
       matchupsDiv.appendChild(mDiv);
     });
 
@@ -368,11 +687,10 @@ function makeSlot(name, matchup, pos, roundIdx, matchIdx) {
 
   if (!name) {
     div.classList.add('empty');
-    div.textContent = '—';
+    div.textContent = '\u2014';
     return div;
   }
 
-  // Seed badge (only round 0)
   if (roundIdx === 0) {
     const seed = document.createElement('span');
     seed.className = 'seed';
@@ -384,7 +702,6 @@ function makeSlot(name, matchup, pos, roundIdx, matchIdx) {
   span.textContent = name;
   div.appendChild(span);
 
-  // winner / loser state
   if (matchup.winner === name) div.classList.add('winner');
   else if (matchup.winner && matchup.winner !== name) div.classList.add('loser');
 
@@ -392,40 +709,47 @@ function makeSlot(name, matchup, pos, roundIdx, matchIdx) {
   return div;
 }
 
-/* ── Pick Winner Logic ─────────────────────────────────── */
+/* ── Pick Winner ───────────────────────────────────────── */
 function pickWinner(roundIdx, matchIdx, pos) {
   const matchup = rounds[roundIdx][matchIdx];
   const chosen = pos === 'top' ? matchup.top : matchup.bottom;
   if (!chosen) return;
 
-  // If already picked and clicking same winner, deselect
   if (matchup.winner === chosen) {
     clearFromRound(roundIdx, matchIdx);
     renderBracket();
     return;
   }
 
-  // If switching pick, clear downstream first
-  if (matchup.winner) {
-    clearFromRound(roundIdx, matchIdx);
-  }
+  if (matchup.winner) clearFromRound(roundIdx, matchIdx);
 
   matchup.winner = chosen;
 
-  // Advance winner to next round
   if (roundIdx < rounds.length - 1) {
     const nextMatchIdx = Math.floor(matchIdx / 2);
     const nextPos = matchIdx % 2 === 0 ? 'top' : 'bottom';
     rounds[roundIdx + 1][nextMatchIdx][nextPos] = chosen;
   }
 
-  // Check for champion (last round, single matchup)
   if (roundIdx === rounds.length - 1) {
     document.getElementById('champion-name').textContent = chosen;
     document.getElementById('champion-banner').classList.add('visible');
   }
 
   renderBracket();
+}
+
+/* Silent version for auto-advancing BYEs (no re-render per call) */
+function pickWinnerSilent(roundIdx, matchIdx, pos) {
+  const matchup = rounds[roundIdx][matchIdx];
+  const chosen = pos === 'top' ? matchup.top : matchup.bottom;
+  if (!chosen) return;
+  matchup.winner = chosen;
+  if (roundIdx < rounds.length - 1) {
+    const nextMatchIdx = Math.floor(matchIdx / 2);
+    const nextPos = matchIdx % 2 === 0 ? 'top' : 'bottom';
+    rounds[roundIdx + 1][nextMatchIdx][nextPos] = chosen;
+  }
 }
 
 function clearFromRound(roundIdx, matchIdx) {
@@ -436,108 +760,86 @@ function clearFromRound(roundIdx, matchIdx) {
   if (roundIdx < rounds.length - 1) {
     const nextMatchIdx = Math.floor(matchIdx / 2);
     const nextPos = matchIdx % 2 === 0 ? 'top' : 'bottom';
-    // Only clear if it's still the same team
     if (rounds[roundIdx + 1][nextMatchIdx][nextPos] === oldWinner) {
-      // Recursively clear downstream
       clearFromRound(roundIdx + 1, nextMatchIdx);
       rounds[roundIdx + 1][nextMatchIdx][nextPos] = null;
     }
   }
 
-  // Hide champion if cleared
   if (roundIdx === rounds.length - 1) {
     document.getElementById('champion-banner').classList.remove('visible');
   }
 }
 
-/* ── Export Picks → JSON ───────────────────────────────── */
+/* ── Exports ───────────────────────────────────────────── */
 function exportJSON() {
+  const names = roundNames.length ? roundNames : rounds.map((_, i) => `Round ${i + 1}`);
   const picks = rounds.map((rnd, ri) => ({
-    round: ROUND_NAMES[ri],
-    matchups: rnd.map(m => ({
-      top: m.top,
-      bottom: m.bottom,
-      winner: m.winner
-    }))
+    round: names[ri],
+    matchups: rnd.map(m => ({ top: m.top, bottom: m.bottom, winner: m.winner }))
   }));
   const blob = new Blob([JSON.stringify(picks, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'bracket_picks.json';
-  a.click();
+  a.href = url; a.download = 'bracket_picks.json'; a.click();
   URL.revokeObjectURL(url);
   toast('Picks exported as JSON!');
 }
 
-/* ── Export Picks → PDF (send to Python backend or print) ─ */
 function exportPDF() {
-  // Collect picks JSON
+  const names = roundNames.length ? roundNames : rounds.map((_, i) => `Round ${i + 1}`);
   const picks = rounds.map((rnd, ri) => ({
-    round: ROUND_NAMES[ri],
-    matchups: rnd.map(m => ({
-      top: m.top,
-      bottom: m.bottom,
-      winner: m.winner
-    }))
+    round: names[ri],
+    matchups: rnd.map(m => ({ top: m.top, bottom: m.bottom, winner: m.winner }))
   }));
-
-  // Try sending to local Python server first
   fetch('http://localhost:5000/generate-pdf', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ picks })
   })
-  .then(res => {
-    if (!res.ok) throw new Error('Server not available');
-    return res.blob();
-  })
+  .then(res => { if (!res.ok) throw new Error(); return res.blob(); })
   .then(blob => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'bracket.pdf';
-    a.click();
+    a.href = url; a.download = 'bracket.pdf'; a.click();
     URL.revokeObjectURL(url);
     toast('PDF downloaded!');
   })
   .catch(() => {
-    // Fallback: browser print
-    toast('PDF server not running — opening print dialog...');
+    toast('PDF server not running \u2014 opening print dialog...');
     setTimeout(() => window.print(), 600);
   });
 }
 
-/* ── Edit Teams Modal ──────────────────────────────────── */
-document.getElementById('btn-edit-teams').addEventListener('click', () => {
-  document.getElementById('teams-textarea').value = currentTeams.join('\n');
-  document.getElementById('modal-teams').classList.add('open');
-});
-document.getElementById('btn-cancel-teams').addEventListener('click', () => {
-  document.getElementById('modal-teams').classList.remove('open');
-});
-document.getElementById('btn-save-teams').addEventListener('click', () => {
-  const raw = document.getElementById('teams-textarea').value;
-  const teams = raw.split('\n').map(t => t.trim()).filter(Boolean).slice(0, 64);
-  if (teams.length < 2) { toast('Need at least 2 teams!'); return; }
-  document.getElementById('modal-teams').classList.remove('open');
-  initBracket(teams);
-  toast(`Bracket rebuilt with ${teams.length} teams!`);
-});
-
-/* ── Header Buttons ────────────────────────────────────── */
+/* ── Header button wiring ──────────────────────────────── */
 document.getElementById('btn-randomize').addEventListener('click', () => {
-  initBracket(currentTeams);
+  if (currentTeams.length < 2) { toast('Generate a bracket first!'); return; }
+  initBracket([...currentTeams]);
   toast('Bracket shuffled!');
 });
 document.getElementById('btn-export-json').addEventListener('click', exportJSON);
 document.getElementById('btn-export-pdf').addEventListener('click', exportPDF);
 
-/* ── Load teams.json or fall back to defaults ──────────── */
-fetch('teams.json')
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(teams => initBracket(teams))
-  .catch(() => initBracket(DEFAULT_TEAMS));
+/* ── Init ──────────────────────────────────────────────── */
+(function boot() {
+  // Try localStorage first
+  if (loadAthletes() && athletes.length > 0) {
+    renderAthletesList();
+    return;
+  }
+  // Otherwise try teams.json
+  fetch('teams.json')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(teams => {
+      athletes = teams.filter(t => t && typeof t === 'string');
+      saveAthletes();
+      renderAthletesList();
+    })
+    .catch(() => {
+      athletes = [];
+      renderAthletesList();
+    });
+})();
 
 </script>
 </body>
