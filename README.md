@@ -1,5 +1,7 @@
 # MN Fun Squad — Hall of Fame Bracket
 
+[![CI](https://github.com/hondoentertainment/MN-Fun-Squad-Hall-of-Fame/actions/workflows/ci.yml/badge.svg)](https://github.com/hondoentertainment/MN-Fun-Squad-Hall-of-Fame/actions/workflows/ci.yml)
+
 A complete system for running a 64-athlete single-elimination tournament bracket: an interactive browser-based picker with shareable links and a Python-powered PDF generator.
 
 **Live site:** https://mn-fun-squad-hall-of-fame.vercel.app
