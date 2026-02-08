@@ -459,10 +459,19 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<script>
+<script type="module">
 /* ════════════════════════════════════════════════════════════
    MN FUN SQUAD — HALL OF FAME BRACKET
    ════════════════════════════════════════════════════════════ */
+
+import {
+  nextPow2 as logicNextPow2,
+  buildRounds,
+  autoAdvanceByes as logicAutoAdvanceByes,
+  applyPick,
+  clearFromRound as logicClearFromRound,
+  resetPicks as logicResetPicks,
+} from './src/bracket-logic.js';
 
 /* ── Tabs ──────────────────────────────────────────────── */
 const tabBtns = document.querySelectorAll('.tab-btn');
@@ -818,33 +827,12 @@ function nextPow2(n) {
 
 /* ── Build bracket ─────────────────────────────────────── */
 function initBracket(teams) {
-  const size = nextPow2(teams.length);
-  currentTeams = teams.slice(0, size);
-  while (currentTeams.length < size) currentTeams.push(`BYE ${currentTeams.length + 1}`);
+  const built = buildRounds(teams, { shuffleTeams: true });
+  currentTeams = built.currentTeams;
+  rounds = built.rounds;
+  roundNames = built.roundNames;
 
-  const shuffled = shuffle(currentTeams);
-
-  roundNames = ROUND_NAMES_MAP[size] || [];
-  const numRounds = Math.log2(size);
-
-  rounds = [];
-  const r0 = [];
-  for (let i = 0; i < size; i += 2) {
-    r0.push({ top: shuffled[i], bottom: shuffled[i + 1], winner: null, topSeed: i + 1, bottomSeed: i + 2 });
-  }
-  rounds.push(r0);
-
-  let prevCount = size / 2;
-  for (let r = 1; r < numRounds; r++) {
-    const rnd = [];
-    for (let m = 0; m < prevCount / 2; m++) {
-      rnd.push({ top: null, bottom: null, winner: null });
-    }
-    rounds.push(rnd);
-    prevCount /= 2;
-  }
-
-  autoAdvanceByes();
+  logicAutoAdvanceByes(rounds);
   saveBracket();
   renderBracket();
   document.getElementById('champion-banner').classList.remove('visible');
@@ -852,31 +840,13 @@ function initBracket(teams) {
 }
 
 function autoAdvanceByes() {
-  rounds[0].forEach((m, mi) => {
-    const topIsBye = m.top && m.top.startsWith('BYE');
-    const botIsBye = m.bottom && m.bottom.startsWith('BYE');
-    if (topIsBye && !botIsBye) {
-      pickWinnerSilent(0, mi, 'bottom');
-    } else if (!topIsBye && botIsBye) {
-      pickWinnerSilent(0, mi, 'top');
-    } else if (topIsBye && botIsBye) {
-      pickWinnerSilent(0, mi, 'top');
-    }
-  });
+  logicAutoAdvanceByes(rounds);
 }
 
 /* ── Reset picks (keep seeding) ────────────────────────── */
 function resetPicks() {
   if (!rounds.length) return;
-  // Clear all winners and downstream slots
-  for (let r = rounds.length - 1; r >= 0; r--) {
-    rounds[r].forEach(m => {
-      m.winner = null;
-      if (r > 0) { m.top = null; m.bottom = null; }
-    });
-  }
-  // Re-advance BYEs
-  autoAdvanceByes();
+  logicResetPicks(rounds);
   saveBracket();
   renderBracket();
   document.getElementById('champion-banner').classList.remove('visible');
@@ -972,33 +942,14 @@ function makeSlot(name, matchup, pos, roundIdx, matchIdx) {
 
 /* ── Pick Winner ───────────────────────────────────────── */
 function pickWinner(roundIdx, matchIdx, pos) {
-  const matchup = rounds[roundIdx][matchIdx];
-  const chosen = pos === 'top' ? matchup.top : matchup.bottom;
-  if (!chosen) return;
-
-  if (matchup.winner === chosen) {
-    clearFromRound(roundIdx, matchIdx);
-    saveBracket();
-    renderBracket();
-    updateChampionBanner();
-    return;
-  }
-
-  if (matchup.winner) clearFromRound(roundIdx, matchIdx);
-
-  matchup.winner = chosen;
-
-  if (roundIdx < rounds.length - 1) {
-    const nextMatchIdx = Math.floor(matchIdx / 2);
-    const nextPos = matchIdx % 2 === 0 ? 'top' : 'bottom';
-    rounds[roundIdx + 1][nextMatchIdx][nextPos] = chosen;
-  }
-
-  if (roundIdx === rounds.length - 1) {
-    document.getElementById('champion-name').textContent = chosen;
+  const result = applyPick(rounds, roundIdx, matchIdx, pos);
+  if (!result.changed) return;
+  if (result.isFinal && !result.cleared) {
+    document.getElementById('champion-name').textContent = result.chosen;
     document.getElementById('champion-banner').classList.add('visible');
+  } else if (result.cleared) {
+    updateChampionBanner();
   }
-
   saveBracket();
   renderBracket();
 }
@@ -1017,19 +968,7 @@ function pickWinnerSilent(roundIdx, matchIdx, pos) {
 }
 
 function clearFromRound(roundIdx, matchIdx) {
-  const matchup = rounds[roundIdx][matchIdx];
-  const oldWinner = matchup.winner;
-  matchup.winner = null;
-
-  if (roundIdx < rounds.length - 1) {
-    const nextMatchIdx = Math.floor(matchIdx / 2);
-    const nextPos = matchIdx % 2 === 0 ? 'top' : 'bottom';
-    if (rounds[roundIdx + 1][nextMatchIdx][nextPos] === oldWinner) {
-      clearFromRound(roundIdx + 1, nextMatchIdx);
-      rounds[roundIdx + 1][nextMatchIdx][nextPos] = null;
-    }
-  }
-
+  logicClearFromRound(rounds, roundIdx, matchIdx);
   if (roundIdx === rounds.length - 1) {
     document.getElementById('champion-banner').classList.remove('visible');
   }

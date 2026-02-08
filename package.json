@@ -1,0 +1,11 @@
+{
+  "name": "mn-fun-squad-hall-of-fame",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --pool=threads"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}
