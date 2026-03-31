@@ -25,3 +25,6 @@ Desktop.ini
 # Node
 node_modules/
 .vercel
+
+# Claude Code
+.claude/
