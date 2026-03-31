@@ -184,6 +184,30 @@
       border-color: var(--accent);
       background: var(--surface2);
     }
+    .drag-handle {
+      cursor: grab;
+      font-size: 1.2rem;
+      color: var(--muted);
+      user-select: none;
+      padding: 0 4px;
+      transition: color 0.15s;
+    }
+    .drag-handle:hover {
+      color: var(--accent);
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+    .athlete-item.dragging {
+      opacity: 0.5;
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+    .athlete-item.drag-over {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+      transform: scale(1.01);
+    }
     .athlete-number {
       min-width: 28px;
       height: 28px;
@@ -260,6 +284,7 @@
       align-items: center;
       gap: 0;
       min-width: 170px;
+      animation: round-slide-in 0.3s ease-out backwards;
     }
     .round-label {
       font-size: .7rem;
@@ -296,7 +321,7 @@
       font-size: .78rem;
       cursor: pointer;
       user-select: none;
-      transition: background .12s, border-color .12s, transform .1s;
+      transition: background .12s, border-color .12s, transform .15s ease-out;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -327,8 +352,9 @@
       border-color: var(--win);
       color: var(--win);
       font-weight: 600;
+      animation: winner-pop 0.3s ease-out;
     }
-    .team-slot.loser { opacity: .38; }
+    .team-slot.loser { opacity: .38; animation: loser-fade 0.25s ease-out forwards; }
     .team-slot.empty {
       cursor: default;
       color: var(--muted);
@@ -378,8 +404,8 @@
       padding: 24px 40px;
       text-align: center;
     }
-    #champion-banner.visible { display: flex; }
-    #champion-banner .trophy { font-size: 2.6rem; margin-bottom: 6px; }
+    #champion-banner.visible { display: flex; animation: champion-entrance 0.6s ease-out; }
+    #champion-banner .trophy { font-size: 2.6rem; margin-bottom: 6px; animation: trophy-pulse 1.5s ease-in-out infinite; }
     #champion-banner .label  { font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
     #champion-banner .name   { font-size: 1.5rem; font-weight: 700; color: var(--win); margin-top: 4px; }
 
@@ -445,8 +471,106 @@
       #panel-athletes { padding: 20px 16px 40px; }
       #bracket-container { padding: 16px; gap: 18px; }
       .add-athlete-row { flex-direction: column; }
+      .header-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+    }
+
+    /* ── Bracket Animations ─────────────────────────────────── */
+    @keyframes winner-pop {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes loser-fade {
+      from { opacity: 1; }
+      to { opacity: 0.38; }
+    }
+    @keyframes champion-entrance {
+      0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+      60% { transform: scale(1.05) translateY(-5px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes trophy-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    @keyframes round-slide-in {
+      from { opacity: 0; transform: translateX(-15px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @media print {
+      .round, .team-slot.winner, .team-slot.loser, #champion-banner.visible, #champion-banner .trophy {
+        animation: none !important;
+      }
+    }
+
+    /* ── Mobile vertical bracket ──────────────────────────── */
+    @media (max-width: 768px) {
+      #bracket-container {
+        flex-direction: column;
+        align-items: stretch;
+        min-width: unset;
+        padding: 16px;
+        gap: 24px;
+      }
+
+      .round {
+        min-width: unset;
+        width: 100%;
+      }
+
+      .round-label {
+        font-size: 0.82rem;
+        text-align: center;
+        padding: 8px 0;
+        margin-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .matchups {
+        gap: 8px;
+      }
+
+      .matchup {
+        margin-top: 0 !important;
+      }
+
+      .team-slot {
+        height: 40px;
+        font-size: 0.85rem;
+        padding: 0 14px;
+      }
+
+      .bracket-toolbar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding: 12px 16px !important;
+      }
+
+      .bracket-toolbar span {
+        text-align: center;
+        margin-left: 0 !important;
+      }
+
+      #champion-banner .name {
+        font-size: 1.2rem;
+      }
+
+      #champion-banner .trophy {
+        font-size: 2rem;
+      }
+
+      .round + .round {
+        border-top: 2px solid var(--border);
+        padding-top: 16px;
+      }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -485,7 +609,7 @@
     <button class="danger" id="btn-clear-all">Clear All</button>
     <button id="btn-resume-bracket" style="display:none;">Resume Bracket &rarr;</button>
     <button id="btn-generate-bracket" class="primary">Generate Bracket &rarr;</button>
-    <span class="hint">Min 2 athletes needed to build a bracket</span>
+    <span class="hint">Drag athletes to set seeding order. Min 2 needed.</span>
   </div>
 </div>
 
@@ -641,6 +765,49 @@ function renderAthletesList() {
       <div class="athlete-number">${i + 1}</div>
       <div class="athlete-name">${escapeHtml(name)}</div>
       <div class="athlete-meta"></div>`;
+
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '\u2261';
+    handle.title = 'Drag to reorder';
+    li.prepend(handle);
+
+    li.draggable = true;
+    li.dataset.index = i;
+
+    li.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', i);
+      li.classList.add('dragging');
+    });
+
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      document.querySelectorAll('.athlete-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    li.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      li.classList.add('drag-over');
+    });
+
+    li.addEventListener('dragleave', () => {
+      li.classList.remove('drag-over');
+    });
+
+    li.addEventListener('drop', (e) => {
+      e.preventDefault();
+      li.classList.remove('drag-over');
+      const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIndex = parseInt(li.dataset.index, 10);
+      if (fromIndex === toIndex) return;
+      const [moved] = athletes.splice(fromIndex, 1);
+      athletes.splice(toIndex, 0, moved);
+      saveAthletes();
+      renderAthletesList();
+    });
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'athlete-remove';
     removeBtn.title = 'Remove';
@@ -941,6 +1108,7 @@ function renderBracket() {
   for (let r = 0; r < rounds.length; r++) {
     const roundDiv = document.createElement('div');
     roundDiv.className = 'round';
+    roundDiv.style.animationDelay = `${r * 0.08}s`;
 
     const label = document.createElement('div');
     label.className = 'round-label';
@@ -1057,28 +1225,76 @@ function exportJSON() {
 }
 
 function exportPDF() {
+  if (!rounds.length) { toast('Generate a bracket first!'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+  const pageW = 792, pageH = 612;
+  const marginX = 40, marginTop = 50, marginBottom = 30;
+
   const names = roundNames.length ? roundNames : rounds.map((_, i) => `Round ${i + 1}`);
-  const picks = rounds.map((rnd, ri) => ({
-    round: names[ri],
-    matchups: rnd.map(m => ({ top: m.top, bottom: m.bottom, winner: m.winner }))
-  }));
-  fetch('http://localhost:5000/generate-pdf', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ picks })
-  })
-  .then(res => { if (!res.ok) throw new Error(); return res.blob(); })
-  .then(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'bracket.pdf'; a.click();
-    URL.revokeObjectURL(url);
-    toast('PDF downloaded!');
-  })
-  .catch(() => {
-    toast('PDF server not running \u2014 opening print dialog...');
-    setTimeout(() => window.print(), 600);
+  const numRounds = rounds.length;
+  const colW = (pageW - marginX * 2) / numRounds;
+
+  // Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(74, 71, 163);
+  doc.text('MN Fun Squad \u2014 Hall of Fame Bracket', pageW / 2, 30, { align: 'center' });
+
+  // Draw each round
+  const slotH = 22;
+  const matchupH = slotH * 2 + 4;
+
+  rounds.forEach((rnd, ri) => {
+    const x = marginX + ri * colW;
+    const availH = pageH - marginTop - marginBottom;
+    const matchupGap = rnd.length > 1 ? (availH - rnd.length * matchupH) / (rnd.length - 1) : 0;
+
+    // Round label
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(names[ri] || `Round ${ri + 1}`, x + colW / 2, marginTop - 6, { align: 'center' });
+
+    rnd.forEach((m, mi) => {
+      const y = marginTop + mi * (matchupH + Math.max(matchupGap, 4));
+      const boxW = colW - 10;
+
+      // Top slot
+      const topIsWinner = m.winner && m.winner === m.top;
+      doc.setDrawColor(topIsWinner ? 0 : 180, topIsWinner ? 135 : 180, topIsWinner ? 90 : 180);
+      doc.setLineWidth(topIsWinner ? 1.2 : 0.5);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(x + 5, y, boxW, slotH, 'FD');
+      doc.setFont('helvetica', topIsWinner ? 'bold' : 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(topIsWinner ? 0 : 60, topIsWinner ? 135 : 60, topIsWinner ? 90 : 60);
+      doc.text(m.top || '', x + 9, y + slotH / 2 + 2, { maxWidth: boxW - 8 });
+
+      // Bottom slot
+      const botIsWinner = m.winner && m.winner === m.bottom;
+      doc.setDrawColor(botIsWinner ? 0 : 180, botIsWinner ? 135 : 180, botIsWinner ? 90 : 180);
+      doc.setLineWidth(botIsWinner ? 1.2 : 0.5);
+      doc.rect(x + 5, y + slotH + 2, boxW, slotH, 'FD');
+      doc.setFont('helvetica', botIsWinner ? 'bold' : 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(botIsWinner ? 0 : 60, botIsWinner ? 135 : 60, botIsWinner ? 90 : 60);
+      doc.text(m.bottom || '', x + 9, y + slotH + 2 + slotH / 2 + 2, { maxWidth: boxW - 8 });
+    });
   });
+
+  // Champion callout
+  const lastRound = rounds[rounds.length - 1];
+  if (lastRound && lastRound.length === 1 && lastRound[0].winner) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(0, 135, 90);
+    doc.text('Champion: ' + lastRound[0].winner, pageW / 2, pageH - 14, { align: 'center' });
+  }
+
+  doc.save('bracket.pdf');
+  toast('PDF downloaded!');
 }
 
 /* ── Header & bracket toolbar button wiring ────────────── */
